@@ -108,8 +108,8 @@ module.exports = async (req, res) => {
     const referenceName = String(body.referenceName || '参考音频').slice(0, 200);
 
     if (!text) return sendJson(res, 400, { ok: false, error: '请输入要合成的文本' });
-    if (text.length > 1000) {
-      return sendJson(res, 400, { ok: false, error: '文本过长（上限 1000 字），太长容易超出 Serverless 响应体积，请分段生成' });
+    if (text.length > 5000) {
+      return sendJson(res, 400, { ok: false, error: '文本过长（上限 5000 字），请分段生成' });
     }
     if (style.length > 500) return sendJson(res, 400, { ok: false, error: '风格指令过长（上限 500 字）' });
     if (!referenceDataUrl) return sendJson(res, 400, { ok: false, error: '请先上传参考音频（mp3 / wav）' });

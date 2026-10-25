@@ -126,7 +126,7 @@ drop.addEventListener('drop', (e) => {
 
 const textEl = document.getElementById('text');
 function updateCount() {
-  document.getElementById('charCount').textContent = textEl.value.length + ' / 1000 字';
+  document.getElementById('charCount').textContent = textEl.value.length + ' / 5000 字';
 }
 textEl.addEventListener('input', updateCount);
 updateCount();
