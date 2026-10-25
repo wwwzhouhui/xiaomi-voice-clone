@@ -152,7 +152,9 @@ module.exports = async (req, res) => {
     let result = await callXiaomi(cfg, { text, style, referenceDataUrl, format: requested });
     let actualFormat = requested;
     // mp3 不被接受时自动回落 wav（文档示例格式），并在返回里如实标注实际格式。
-    if (!result.ok && requested === 'mp3') {
+    // 但 429 限流时绝不能立即再调一次：那是多一次请求，只会加重限流，
+    // 前端会对 429 做退避重试，这里只返回一次 429。
+    if (!result.ok && requested === 'mp3' && result.status !== 429) {
       const fallback = await callXiaomi(cfg, { text, style, referenceDataUrl, format: 'wav' });
       if (fallback.ok) {
         result = fallback;
@@ -160,6 +162,15 @@ module.exports = async (req, res) => {
       }
     }
     if (!result.ok) {
+      // 429 不再原样透传上游 JSON（用户看到的就是一串看不懂的 JSON），
+      // 而是返回 429 状态码 + 人话，前端据此做退避重试。
+      if (result.status === 429) {
+        return sendJson(res, 429, {
+          ok: false,
+          rateLimited: true,
+          error: '小米接口限流（429 Too many requests）：短时间内请求太多。分段生成会连续调用多次，容易触发这个限制，请等待后重试，前端会对限流自动退避重试。',
+        });
+      }
       return sendJson(res, 502, {
         ok: false,
         error: '小米接口返回 ' + (result.status || '') + '：' + (result.message || '未知错误'),

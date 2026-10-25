@@ -29,7 +29,26 @@ function clearRefSelection() {
 //  - 413 / FUNCTION_PAYLOAD_TOO_LARGE / Request Entity Too Large
 //    都是“请求体太大”，绝不能原样抛给用户一个 JSON 解析报错。
 //  - 其他非 JSON 响应也先显示状态码和纯文本摘要，而不是解析异常。
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+function isRateLimitError(msg) {
+  return /429|Too many requests|限流/i.test(String(msg || ''));
+}
+function isTimeoutError(msg) {
+  return /aborted|超时/i.test(String(msg || ''));
+}
 function humanizeCloneError(msg) {
+  // 已经是详细人话的限流失败信息（如“已自动退避重试 3 次”）不要
+  // 再被 generic 限流文案覆盖，否则会丢掉“等 1 分钟 / 前面段未合并”的关键信息。
+  if (String(msg || '').includes('已自动退避重试')) {
+    return String(msg);
+  }
+  // 429 绝不能原样显示上游 JSON（用户看到的就是一串 error/code/message），
+  // 而且“拆短”对限流是反的：段切得越短，请求次数越多，限流越重。
+  if (isRateLimitError(msg)) {
+    return '小米接口限流（429 Too many requests）：短时间内请求太多，请等待后重试。';
+  }
   // 服务端 55 秒超时 abort 后，Node fetch 的原文就是
   // "This operation was aborted"，绝不能原样显示给用户。
   if (/aborted/i.test(String(msg || ''))) {
@@ -329,13 +348,17 @@ document.getElementById('genBtn').addEventListener('click', async () => {
     const isChunked = chunks.length > 1;
     const segmentResults = [];
     for (let i = 0; i < chunks.length; i++) {
-      // 超时段自动重试一次：小米偶发超过 55 秒（实测 3 次里有 1 次），
-      // 只对超时重试，其他错误（如参数错误）重试也没有意义。
+      // 重试规则（只对可恢复的错误重试，参数错误等重试也没有意义）：
+      //  - 超时：自动重试一次（小米偶发超过 55 秒）。
+      //  - 限流 429：退避重试最多 3 次，间隔 5 / 10 / 20 秒，立即重试
+      //    只会加重限流；段切得更短对限流也是反的（请求更多）。
       let segment = null;
       let lastErr = null;
-      for (let attempt = 0; attempt < 2; attempt++) {
+      let rateRetries = 0;
+      let timeoutRetries = 0;
+      while (true) {
         progress.textContent = isChunked
-          ? '正在生成第 ' + (i + 1) + ' / ' + chunks.length + ' 段' + (attempt > 0 ? '（上次超时，正在重试）' : '') + '…（每段约 300 字，逐段生成后合并）'
+          ? '正在生成第 ' + (i + 1) + ' / ' + chunks.length + ' 段…（每段约 300 字，逐段生成后合并）'
           : '正在生成，请稍候…（克隆模型目前是非流式，生成完才一次返回）';
         try {
           const r = await fetch('/api/clone', {
@@ -347,7 +370,15 @@ document.getElementById('genBtn').addEventListener('click', async () => {
           break;
         } catch (e) {
           lastErr = e;
-          if (/aborted/i.test(String(e.message || '')) || /超时/.test(String(e.message || ''))) {
+          if (isRateLimitError(e.message) && rateRetries < 3) {
+            const delay = [5000, 10000, 20000][rateRetries];
+            rateRetries++;
+            progress.textContent = '第 ' + (i + 1) + ' / ' + chunks.length + ' 段被小米限流（429），等待 ' + (delay / 1000) + ' 秒后重试（第 ' + rateRetries + ' 次）…';
+            await sleep(delay);
+            continue;
+          }
+          if (isTimeoutError(e.message) && timeoutRetries < 1) {
+            timeoutRetries++;
             continue;
           }
           break;
@@ -355,11 +386,20 @@ document.getElementById('genBtn').addEventListener('click', async () => {
       }
       if (!segment) {
         if (isChunked) {
+          if (isRateLimitError(lastErr.message)) {
+            throw new Error('第 ' + (i + 1) + ' / ' + chunks.length + ' 段生成失败：小米接口限流（429），已自动退避重试 3 次仍被限流，请等待 1 分钟后再点生成（前面 ' + i + ' 段未合并，需要重新生成；不要连续点生成，连续点击会加重限流）。');
+          }
           throw new Error('第 ' + (i + 1) + ' / ' + chunks.length + ' 段生成失败：' + humanizeCloneError(lastErr.message) + '（前面 ' + i + ' 段未合并，请重试或把该段再拆短）');
         }
         throw lastErr;
       }
       segmentResults.push(segment);
+      // 段间间隔 2 秒：5 段连续调用很容易撞上小米限流，间隔是折中
+      // （间隔太长会让长文本生成拖很久，间隔太短等于没间隔）。
+      if (i + 1 < chunks.length) {
+        progress.textContent = '第 ' + (i + 1) + ' / ' + chunks.length + ' 段已完成，间隔 2 秒再生成下一段，避免触发小米限流…';
+        await sleep(2000);
+      }
     }
 
     let resultMetaText;
