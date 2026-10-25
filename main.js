@@ -5,9 +5,11 @@
 // 返回 413 纯文本，根本到不了后端。
 const MAX_REF_BYTES = 3 * 1024 * 1024;
 // 自动分段：单次调用 55 秒超时是硬约束，长文本必须拆开。
-// 每段按句打包，上限 300 字（300 字音频约 1 分钟多，单段推理
-// 通常远不到 55 秒；1000 字一整段就很容易超时）。
-const MAX_CHUNK_CHARS = 300;
+// 每段按句打包，上限 200 字：之前用 300 字时实测经常超过 55 秒
+// 超时（1428 字 6 段里第 1 段超时重试后成功、第 5 段超时两次失败），
+// 200 字音频约 40 多秒，单段更可能在 55 秒内完成；代价是段数
+// 更多、总时间更长，配合段间 2 秒间隔和 429 退避重试。
+const MAX_CHUNK_CHARS = 200;
 let refDataUrl = '';
 let refName = '';
 let refSize = 0;
@@ -52,7 +54,7 @@ function humanizeCloneError(msg) {
   // 服务端 55 秒超时 abort 后，Node fetch 的原文就是
   // "This operation was aborted"，绝不能原样显示给用户。
   if (/aborted/i.test(String(msg || ''))) {
-    return '生成超时：小米在 55 秒内没有返回结果，请把文本拆得更短再试（自动分段已按约 300 字一段切分，单段仍超时请再拆短该段）。';
+    return '生成超时：小米在 55 秒内没有返回结果，请把文本拆得更短再试（自动分段已按约 200 字一段切分，单段仍超时请再拆短该段）。';
   }
   return String(msg || '');
 }
@@ -342,7 +344,7 @@ document.getElementById('genBtn').addEventListener('click', async () => {
     const pw = document.getElementById('clonePw').value;
     if (pw) headers['x-clone-password'] = pw;
 
-    // 长文本自动分段：超过 300 字就按句切段，逐段调用（每段都在
+    // 长文本自动分段：超过 200 字就按句切段，逐段调用（每段都在
     // 55 秒超时内），最后合并成一个文件。短文本走原来的一次调用。
     const chunks = text.length > MAX_CHUNK_CHARS ? splitTextIntoChunks(text) : [text];
     const isChunked = chunks.length > 1;
@@ -358,7 +360,7 @@ document.getElementById('genBtn').addEventListener('click', async () => {
       let timeoutRetries = 0;
       while (true) {
         progress.textContent = isChunked
-          ? '正在生成第 ' + (i + 1) + ' / ' + chunks.length + ' 段…（每段约 300 字，逐段生成后合并）'
+          ? '正在生成第 ' + (i + 1) + ' / ' + chunks.length + ' 段…（每段约 200 字，逐段生成后合并）'
           : '正在生成，请稍候…（克隆模型目前是非流式，生成完才一次返回）';
         try {
           const r = await fetch('/api/clone', {
@@ -426,7 +428,7 @@ document.getElementById('genBtn').addEventListener('click', async () => {
       resultMetaText =
         '文件名：' + fileName +
         '\n实际输出格式：' + merged.format + '（已合并）' +
-        '\n分段：共 ' + chunks.length + ' 段，每段约 300 字，逐段生成后合并' +
+        '\n分段：共 ' + chunks.length + ' 段，每段约 200 字，逐段生成后合并' +
         (lastResult.fallbackUsed ? '\n注：有段落 mp3 不被接受，已自动回落 wav' : '') +
         (lastResult.mock ? '\n模式：本地 Mock（非真实小米调用）' : '') +
         '\n大小：' + formatBytes(merged.blob.size) +

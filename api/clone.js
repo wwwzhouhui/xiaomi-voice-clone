@@ -199,7 +199,7 @@ module.exports = async (req, res) => {
     if (/aborted/i.test(raw) || (e && e.name === 'AbortError')) {
       return sendJson(res, 504, {
         ok: false,
-        error: '生成超时：小米在 55 秒内没有返回结果，请把文本拆得更短再试（前端自动分段已按约 300 字一段切分，单段仍超时请再拆短该段）。',
+        error: '生成超时：小米在 55 秒内没有返回结果，请把文本拆得更短再试（前端自动分段已按约 200 字一段切分，单段仍超时请再拆短该段）。',
       });
     }
     return sendJson(res, 500, {
