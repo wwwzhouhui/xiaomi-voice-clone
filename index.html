@@ -20,7 +20,7 @@
 
   <section class="card">
     <h2>1. 参考音频（克隆对象）</h2>
-    <p class="hint">只支持 mp3 / wav。按小米文档，Base64 后不超过 10MB，这里按原始文件 7.5MB 拦截。</p>
+    <p class="hint">只支持 mp3 / wav。Vercel 线上版限制：原始文件请控制在 3MB 以内（建议剪 10-30 秒片段）。小米文档本身的 Base64 上限是 10MB，但在 Vercel 上部署时，Vercel 单次请求 4.5MB 的上限更先触发，超了会直接被拒绝。</p>
     <label class="drop" id="drop">
       <input type="file" id="refFile" accept=".mp3,.wav,audio/mpeg,audio/wav" hidden>
       <span id="dropText">点击选择，或把音频文件拖到这里</span>

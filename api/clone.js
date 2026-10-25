@@ -119,10 +119,12 @@ module.exports = async (req, res) => {
       return sendJson(res, 400, { ok: false, error: '参考音频格式不对：只支持 mp3 / wav 的 data URL' });
     }
     const referenceBytes = Buffer.from(m[2], 'base64');
-    // 文档要求：Base64 后的字符串不超过 10MB；这里按原始文件 7.5MB 兜底
-    // （7.5MB 原文件 ≈ 10MB Base64），前端也会先拦截。
-    if (referenceBytes.length === 0 || referenceBytes.length > 7.5 * 1024 * 1024) {
-      return sendJson(res, 400, { ok: false, error: '参考音频过大：原始文件请控制在 7.5MB 以内（Base64 后不超过 10MB）' });
+    // 与前端一致的 3MB 上限：小米文档的 Base64 上限是 10MB，但在 Vercel
+    // 上部署时，Vercel 单次请求 4.5MB 的上限更先触发（Base64 后约变大
+    // 1/3，3MB 原文件 ≈ 4MB 请求体，留有余量）。绕过前端直接调接口时，
+    // 这里返回一句人话，而不是让调用方去猜一个 413 纯文本。
+    if (referenceBytes.length === 0 || referenceBytes.length > 3 * 1024 * 1024) {
+      return sendJson(res, 400, { ok: false, error: '参考音频太大了：原始文件请控制在 3MB 以内（建议剪 10-30 秒片段）。Vercel 线上版单次请求不能超过 4.5MB，Base64 后会变大，超过会在函数运行前被直接拒绝。' });
     }
 
     if (!cfg.apiKey) {
