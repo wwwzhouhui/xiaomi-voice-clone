@@ -32,7 +32,7 @@
   <section class="card">
     <h2>2. 要说的话</h2>
     <textarea id="text" rows="4" maxlength="5000" placeholder="例如：大家好，欢迎来到今天的节目。">大家好，欢迎来到今天的节目。</textarea>
-    <div class="row between"><span id="charCount">0 / 5000 字</span><span class="hint">单次上限 5000 字；很长的文本仍可能因生成超时或返回体积过大而失败，超长请分段生成</span></div>
+    <div class="row between"><span id="charCount">0 / 5000 字</span><span class="hint">单次上限 5000 字；超过 300 字的长文本会自动按句切段、逐段生成后合并成一个文件</span></div>
     <label class="lbl">风格指令（可选，告诉模型怎么说）</label>
     <input id="style" type="text" maxlength="500" placeholder="例如：语速稍慢，温柔、播音腔">
     <div id="clonePwWrap" style="display:none;">

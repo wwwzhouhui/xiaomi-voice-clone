@@ -182,9 +182,18 @@ module.exports = async (req, res) => {
       createdAt: new Date().toISOString(),
     });
   } catch (e) {
+    const raw = String(e && e.message ? e.message : e);
+    // 55 秒超时 abort 的原文是 "This operation was aborted"，必须转成人话，
+    // 否则前端会原样显示一句看不懂的英文。
+    if (/aborted/i.test(raw) || (e && e.name === 'AbortError')) {
+      return sendJson(res, 504, {
+        ok: false,
+        error: '生成超时：小米在 55 秒内没有返回结果，请把文本拆得更短再试（前端自动分段已按约 300 字一段切分，单段仍超时请再拆短该段）。',
+      });
+    }
     return sendJson(res, 500, {
       ok: false,
-      error: '生成失败：' + sanitizeUpstreamMessage(e && e.message ? e.message : e),
+      error: '生成失败：' + sanitizeUpstreamMessage(raw),
     });
   }
 };
