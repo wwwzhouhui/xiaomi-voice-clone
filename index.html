@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小米语音克隆</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>小米语音克隆</h1>
+    <p class="sub">上传一段参考音频，输入文本，生成克隆音色的语音并下载。</p>
+  </div>
+  <a class="btn ghost" href="admin.html">管理后台</a>
+</header>
+
+<main class="wrap">
+  <div id="status" class="notice">正在读取服务状态…</div>
+
+  <section class="card">
+    <h2>1. 参考音频（克隆对象）</h2>
+    <p class="hint">只支持 mp3 / wav。按小米文档，Base64 后不超过 10MB，这里按原始文件 7.5MB 拦截。</p>
+    <label class="drop" id="drop">
+      <input type="file" id="refFile" accept=".mp3,.wav,audio/mpeg,audio/wav" hidden>
+      <span id="dropText">点击选择，或把音频文件拖到这里</span>
+    </label>
+    <div id="refInfo" class="meta"></div>
+    <audio id="refPlayer" controls style="display:none; width:100%; margin-top:10px;"></audio>
+  </section>
+
+  <section class="card">
+    <h2>2. 要说的话</h2>
+    <textarea id="text" rows="4" maxlength="1000" placeholder="例如：大家好，欢迎来到今天的节目。">大家好，欢迎来到今天的节目。</textarea>
+    <div class="row between"><span id="charCount">0 / 1000 字</span><span class="hint">太长请分段生成，单次上限 1000 字</span></div>
+    <label class="lbl">风格指令（可选，告诉模型怎么说）</label>
+    <input id="style" type="text" maxlength="500" placeholder="例如：语速稍慢，温柔、播音腔">
+    <div id="clonePwWrap" style="display:none;">
+      <label class="lbl">生成访问密码</label>
+      <input id="clonePw" type="password" placeholder="本站已开启生成密码，请输入">
+    </div>
+  </section>
+
+  <button id="genBtn" class="btn primary big">生成克隆语音</button>
+  <div id="error" class="error" style="display:none;"></div>
+  <div id="progress" class="notice" style="display:none;">正在生成，请稍候…（克隆模型目前是非流式，生成完才一次返回）</div>
+
+  <section id="result" class="card" style="display:none;">
+    <h2>3. 生成结果</h2>
+    <audio id="player" controls style="width:100%;"></audio>
+    <div id="resultMeta" class="meta"></div>
+    <div class="row">
+      <button id="dlAudio" class="btn primary">下载音频</button>
+      <button id="dlInfo" class="btn">下载信息 JSON</button>
+    </div>
+    <p class="hint">音频与信息都由浏览器直接下载，不会在服务器上留存你的参考音频和生成结果。</p>
+  </section>
+
+  <p class="foot">模型与 Key 由管理后台配置，Key 不会出现在前端页面里。克隆仅用于你有权使用的声音，请勿用于冒充他人。</p>
+</main>
+
+<script src="main.js"></script>
+</body>
+</html>

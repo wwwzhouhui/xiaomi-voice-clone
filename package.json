@@ -1,0 +1,1 @@
+{"description":"小米语音克隆 WEB：上传参考音频，生成克隆音色语音，带管理后台，零依赖，可部署到 Vercel。","engines":{"node":">=18"},"name":"xiaomi-voice-clone","private":true,"scripts":{"dev":"node server.mjs","start":"node server.mjs"},"version":"1.0.0"}

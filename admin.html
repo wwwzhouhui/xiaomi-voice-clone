@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>管理后台 · 小米语音克隆</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>管理后台</h1>
+    <p class="sub">配置小米模型 URL、API Key 与输出格式。Key 只在服务端使用，不会返回明文。</p>
+  </div>
+  <a class="btn ghost" href="index.html">回克隆页</a>
+</header>
+
+<main class="wrap">
+  <div class="notice warn">
+    <strong>存储方式请注意：</strong>这里保存的配置只存在于当前函数实例的内存里，
+    冷启动或重新部署后会恢复为环境变量的值。想长期固定，请点“导出 Vercel 环境变量”，
+    把内容粘贴到 Vercel 项目 Settings → Environment Variables 里，再重新部署。
+  </div>
+
+  <section id="loginCard" class="card">
+    <h2>登录</h2>
+    <p class="hint">管理口令来自环境变量 ADMIN_PASSWORD（Vercel 上必须先设置；本地开发默认见终端提示）。</p>
+    <label class="lbl">管理口令</label>
+    <input id="adminPw" type="password" placeholder="输入 ADMIN_PASSWORD">
+    <button id="loginBtn" class="btn primary">进入管理后台</button>
+    <div id="loginError" class="error" style="display:none;"></div>
+  </section>
+
+  <section id="configCard" class="card" style="display:none;">
+    <h2>小米配置</h2>
+    <div id="current" class="meta"></div>
+    <label class="lbl">模型 URL（Base URL）</label>
+    <input id="baseUrl" type="text" placeholder="https://api.xiaomimimo.com/v1">
+    <label class="lbl">模型名</label>
+    <input id="model" type="text" placeholder="mimo-v2.5-tts-voiceclone">
+    <label class="lbl">API Key（留空 = 保持原有）</label>
+    <input id="apiKey" type="password" placeholder="留空保持原有，填了就替换">
+    <label class="check"><input id="clearKey" type="checkbox"> 清除已保存的 Key</label>
+    <label class="lbl">默认输出格式</label>
+    <select id="outputFormat">
+      <option value="mp3">mp3（若上游不支持，会自动回落 wav 并在结果里标注）</option>
+      <option value="wav">wav（文档示例格式）</option>
+    </select>
+    <label class="lbl">生成访问密码（可选，留空 = 保持原有）</label>
+    <input id="clonePw" type="password" placeholder="填了就设为该密码；留空保持原有">
+    <label class="check"><input id="clearClonePw" type="checkbox"> 清除生成密码（恢复公开生成）</label>
+    <div class="row">
+      <button id="saveBtn" class="btn primary">保存配置</button>
+      <button id="testBtn" class="btn">测试连接（调 /models，不花合成费用）</button>
+      <button id="logoutBtn" class="btn ghost">退出登录</button>
+    </div>
+    <div id="adminMsg" class="notice" style="display:none;"></div>
+
+    <h3>导出到 Vercel 环境变量</h3>
+    <p class="hint">点下面按钮会按当前表单生成环境变量文本，复制后粘贴到 Vercel Dashboard；不要把这段文本发给别人，里面可能包含 Key。</p>
+    <button id="exportBtn" class="btn">生成环境变量文本</button>
+    <textarea id="exportText" rows="7" readonly placeholder="点上方按钮后这里会显示 XIAOMI_BASE_URL / XIAOMI_MODEL / XIAOMI_API_KEY 等"></textarea>
+  </section>
+</main>
+
+<script src="admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f6f5f1; color: #222; }
+.top { max-width: 860px; margin: 0 auto; padding: 24px 16px 8px; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.top h1 { margin: 0; font-size: 26px; }
+.sub { color: #666; margin: 6px 0 0; }
+.wrap { max-width: 860px; margin: 0 auto; padding: 8px 16px 40px; }
+.card { background: #fff; border: 1px solid #e5e2da; border-radius: 14px; padding: 18px; margin: 14px 0; }
+.card h2 { margin: 0 0 10px; font-size: 18px; }
+.card h3 { margin: 18px 0 8px; font-size: 16px; }
+.hint { color: #777; font-size: 13px; line-height: 1.6; }
+.notice { background: #fff7e6; border: 1px solid #f0d9a6; border-radius: 10px; padding: 12px 14px; margin: 14px 0; font-size: 14px; line-height: 1.6; }
+.notice.warn { background: #fff3e0; }
+.error { background: #fdecea; border: 1px solid #f5c2bd; color: #8a1f1a; border-radius: 10px; padding: 12px 14px; margin: 14px 0; font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+.drop { display: block; border: 2px dashed #d8d2c4; border-radius: 12px; padding: 26px 14px; text-align: center; cursor: pointer; color: #555; background: #fbfaf7; }
+.drop.dragover { border-color: #ff6a00; background: #fff3ea; }
+textarea, input[type="text"], input[type="password"], select { width: 100%; padding: 10px 12px; border: 1px solid #ddd8cc; border-radius: 10px; font-size: 15px; margin: 6px 0 12px; }
+textarea { resize: vertical; }
+.lbl { display: block; font-size: 14px; font-weight: 600; margin-top: 8px; }
+.check { display: block; font-size: 14px; margin: 0 0 12px; }
+.btn { display: inline-block; border: 1px solid #ddd8cc; background: #fff; border-radius: 999px; padding: 10px 18px; font-size: 15px; cursor: pointer; color: #222; text-decoration: none; }
+.btn.primary { background: #ff6a00; border-color: #ff6a00; color: #fff; }
+.btn.ghost { background: transparent; }
+.btn.big { width: 100%; padding: 14px; font-size: 17px; }
+.btn:disabled { opacity: .55; cursor: wait; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+.row.between { justify-content: space-between; }
+.meta { font-size: 14px; line-height: 1.8; color: #444; white-space: pre-wrap; word-break: break-all; }
+.foot { color: #888; font-size: 13px; line-height: 1.6; }
