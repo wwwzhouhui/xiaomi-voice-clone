@@ -329,22 +329,37 @@ document.getElementById('genBtn').addEventListener('click', async () => {
     const isChunked = chunks.length > 1;
     const segmentResults = [];
     for (let i = 0; i < chunks.length; i++) {
-      progress.textContent = isChunked
-        ? '正在生成第 ' + (i + 1) + ' / ' + chunks.length + ' 段…（每段约 300 字，逐段生成后合并）'
-        : '正在生成，请稍候…（克隆模型目前是非流式，生成完才一次返回）';
-      try {
-        const r = await fetch('/api/clone', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ text: chunks[i], style, referenceAudio: refDataUrl, referenceName: refName }),
-        });
-        segmentResults.push(await parseCloneResponse(r));
-      } catch (e) {
-        if (isChunked) {
-          throw new Error('第 ' + (i + 1) + ' / ' + chunks.length + ' 段生成失败：' + humanizeCloneError(e.message) + '（前面 ' + i + ' 段未合并，请重试或把该段再拆短）');
+      // 超时段自动重试一次：小米偶发超过 55 秒（实测 3 次里有 1 次），
+      // 只对超时重试，其他错误（如参数错误）重试也没有意义。
+      let segment = null;
+      let lastErr = null;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        progress.textContent = isChunked
+          ? '正在生成第 ' + (i + 1) + ' / ' + chunks.length + ' 段' + (attempt > 0 ? '（上次超时，正在重试）' : '') + '…（每段约 300 字，逐段生成后合并）'
+          : '正在生成，请稍候…（克隆模型目前是非流式，生成完才一次返回）';
+        try {
+          const r = await fetch('/api/clone', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ text: chunks[i], style, referenceAudio: refDataUrl, referenceName: refName }),
+          });
+          segment = await parseCloneResponse(r);
+          break;
+        } catch (e) {
+          lastErr = e;
+          if (/aborted/i.test(String(e.message || '')) || /超时/.test(String(e.message || ''))) {
+            continue;
+          }
+          break;
         }
-        throw e;
       }
+      if (!segment) {
+        if (isChunked) {
+          throw new Error('第 ' + (i + 1) + ' / ' + chunks.length + ' 段生成失败：' + humanizeCloneError(lastErr.message) + '（前面 ' + i + ' 段未合并，请重试或把该段再拆短）');
+        }
+        throw lastErr;
+      }
+      segmentResults.push(segment);
     }
 
     let resultMetaText;
@@ -361,7 +376,7 @@ document.getElementById('genBtn').addEventListener('click', async () => {
         model: segmentResults[0].model,
         baseUrl: segmentResults[0].baseUrl,
         text, style,
-        referenceName,
+        referenceName: refName,
         referenceSizeBytes: segmentResults[0].referenceSizeBytes,
         createdAt: new Date().toISOString(),
         mock: segmentResults.some((s) => s.mock),
